@@ -1,4 +1,4 @@
-# anunciar
+# mercado-livre-anunciar
 
 Cria um anúncio no **Mercado Livre** (mercadolivre.com.br, site MLB) a partir de
 uma pasta de fotos de um produto — tudo pela API oficial, sem automação de
@@ -25,7 +25,7 @@ O que acontece:
 ## Instalação
 
 ```bash
-cd ~/Projects/anunciar
+cd ~/Projects/mercado-livre-anunciar
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
