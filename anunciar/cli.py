@@ -268,7 +268,7 @@ def _run(args, parser) -> int:
     status = item.get("status", "active")
     if args.publish:
         pass  # permanece ativo
-    elif cfg.listing["default_status"] == "paused" and status == "active":
+    elif cfg.listing["default_status"] == "paused" and status != "paused":
         ml.update_item(item_id, {"status": "paused"})
         status = "paused"
 

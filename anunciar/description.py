@@ -7,9 +7,11 @@ from .config import Config
 
 
 def _detail_lines(data: dict) -> list[str]:
-    # origem / evento ficam no contexto do parágrafo inicial; aqui entram os
-    # campos estruturados que a pesquisa confirmou.
     lines: list[str] = []
+    if data.get("origin_where_sold"):
+        lines.append(f"- {data['origin_where_sold']}")
+    if data.get("event_edition_location_dates"):
+        lines.append(f"- {data['event_edition_location_dates']}")
     if data.get("author_or_cast"):
         lines.append(f"- Autor/elenco: {data['author_or_cast']}")
     if data.get("publisher"):

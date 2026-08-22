@@ -32,7 +32,9 @@ SCHEMA = """{
   "language": "idioma do item, em português (ex.: 'Japonês', 'Português')",
   "year": inteiro_ou_null,
   "country_of_origin": "país de origem em português (ex.: 'Japão'), ou null",
-  "context": "contexto histórico pesquisado que agrega valor (raridade, obras relacionadas, tiragem, onde era vendido, evento/local/datas)",
+  "context": "contexto histórico pesquisado que agrega valor (raridade, obras relacionadas, tiragem) — NÃO repita origin_where_sold nem event_edition_location_dates aqui",
+  "origin_where_sold": "onde o item era vendido/distribuído originalmente (loja, editora, canal, região) — string ou null",
+  "event_edition_location_dates": "evento/edição relacionada, local e datas (ex.: peça de teatro, convenção, lançamento) — string ou null, se não aplicável",
   "condition_notes": "avaliação honesta do estado de conservação com base nas fotos",
   "is_imported_rare": true_ou_false,
   "price_research": [

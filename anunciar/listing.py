@@ -262,6 +262,11 @@ def build_sale_terms(
 
 
 def build_shipping(price: float, cfg: Config) -> dict:
+    if cfg.shipping.get("flex"):
+        raise SystemExit(
+            "shipping.flex=true não é suportado: Flex nunca deve ser habilitado "
+            "(regra de negócio fixa). Ajuste config.toml para flex = false."
+        )
     free = price > float(cfg.shipping["free_shipping_threshold"])
     return {
         "mode": "me2",
