@@ -17,6 +17,28 @@ from .images import image_blocks, list_images
 WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 15}
 MAX_CONTINUATIONS = 5
 
+# USD por milhão de tokens (preço de tabela pública, out/in). Aproximado — usado
+# só para dar uma ideia de custo no relatório final, não é uma fatura exata.
+_PRICE_PER_MTOK_USD = {
+    "claude-opus": (15.00, 75.00),
+    "claude-sonnet": (3.00, 15.00),
+    "claude-haiku": (0.80, 4.00),
+}
+
+
+def estimate_cost_usd(usage: dict) -> float | None:
+    """Custo aproximado em USD para o total de tokens de uma identificação."""
+    model = (usage or {}).get("model", "")
+    rates = next(
+        (r for prefix, r in _PRICE_PER_MTOK_USD.items() if prefix in model), None
+    )
+    if rates is None:
+        return None
+    input_rate, output_rate = rates
+    input_tokens = usage.get("input_tokens", 0) + usage.get("cache_creation_input_tokens", 0)
+    output_tokens = usage.get("output_tokens", 0)
+    return (input_tokens * input_rate + output_tokens * output_rate) / 1_000_000
+
 SCHEMA = """{
   "title_ml": "string, máx 60 caracteres, rico em palavras-chave: tipo do item + nome + ano + origem",
   "product_type": "livro | hq | mangá | revista | pamphlet | catálogo | ...",
@@ -97,7 +119,20 @@ def _parse_json(text: str) -> dict:
     return json.loads(cleaned[start : end + 1])
 
 
-def _run_turn(client, cfg: Config, messages: list) -> "anthropic.types.Message":
+def _accumulate_usage(totals: dict, message) -> None:
+    usage = getattr(message, "usage", None)
+    if usage is None:
+        return
+    for field in (
+        "input_tokens",
+        "output_tokens",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+    ):
+        totals[field] = totals.get(field, 0) + (getattr(usage, field, None) or 0)
+
+
+def _run_turn(client, cfg: Config, messages: list, usage_totals: dict) -> "anthropic.types.Message":
     """Roda um turno, retomando automaticamente em pause_turn (web search)."""
     for _ in range(MAX_CONTINUATIONS):
         with client.messages.stream(
@@ -108,6 +143,7 @@ def _run_turn(client, cfg: Config, messages: list) -> "anthropic.types.Message":
             messages=messages,
         ) as stream:
             message = stream.get_final_message()
+        _accumulate_usage(usage_totals, message)
         if message.stop_reason == "pause_turn":
             messages = [messages[0], {"role": "assistant", "content": message.content}]
             continue
@@ -117,8 +153,8 @@ def _run_turn(client, cfg: Config, messages: list) -> "anthropic.types.Message":
     raise IdentificationError("Turno pausado repetidamente; tente novamente.")
 
 
-def identify(folder: Path, cfg: Config) -> tuple[dict, list[Path]]:
-    """Identifica o produto da pasta. Retorna (dados, lista ordenada de fotos)."""
+def identify(folder: Path, cfg: Config) -> tuple[dict, list[Path], dict]:
+    """Identifica o produto da pasta. Retorna (dados, lista ordenada de fotos, uso de tokens)."""
     images = list_images(folder)
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise SystemExit("ANTHROPIC_API_KEY não definida no .env.")
@@ -126,10 +162,11 @@ def identify(folder: Path, cfg: Config) -> tuple[dict, list[Path]]:
           + ", ".join(p.name for p in images))
     print("Identificando o produto e pesquisando preços (pode levar alguns minutos)...")
 
+    usage_totals: dict = {"model": cfg.ai["model"]}
     content = image_blocks(images) + [{"type": "text", "text": _build_prompt(cfg)}]
     client = anthropic.Anthropic()
     messages = [{"role": "user", "content": content}]
-    message = _run_turn(client, cfg, messages)
+    message = _run_turn(client, cfg, messages, usage_totals)
     text = _extract_text(message)
 
     try:
@@ -147,7 +184,7 @@ def identify(folder: Path, cfg: Config) -> tuple[dict, list[Path]]:
                 ),
             },
         ]
-        message = _run_turn(client, cfg, retry_messages)
+        message = _run_turn(client, cfg, retry_messages, usage_totals)
         try:
             data = _parse_json(_extract_text(message))
         except json.JSONDecodeError as exc:
@@ -156,7 +193,7 @@ def identify(folder: Path, cfg: Config) -> tuple[dict, list[Path]]:
             ) from exc
 
     _validate(data)
-    return data, images
+    return data, images, usage_totals
 
 
 def _validate(data: dict) -> None:

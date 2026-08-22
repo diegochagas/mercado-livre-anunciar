@@ -17,8 +17,9 @@ from dotenv import load_dotenv
 from . import tokens as tk
 from .config import load_config
 from .description import build_description
-from .identify import IdentificationError, identify
+from .identify import IdentificationError, estimate_cost_usd, identify
 from .listing import (
+    _category_root_name,
     build_attributes,
     build_payload,
     build_sale_terms,
@@ -31,7 +32,7 @@ from .listing import (
 )
 from .ml_api import MLClient, MLError
 from .pricing import apply_rules
-from .runlog import load_log, save_log
+from .runlog import load_log, save_log, save_template
 from .tokens import AuthError, run_auth_flow
 
 
@@ -42,6 +43,10 @@ def _load_env() -> None:
 
 def _fmt_price(value: float) -> str:
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _fmt_int(value: int) -> str:
+    return f"{value:,}".replace(",", ".")
 
 
 def _print_report(info: dict) -> None:
@@ -65,6 +70,17 @@ def _print_report(info: dict) -> None:
         print(f"{'Aviso':>20}: {warning}")
     if info.get("log"):
         print(f"{'Log':>20}: {info['log']}")
+    usage = info.get("usage")
+    if usage:
+        total = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
+        print(f"{'Tokens (Anthropic)':>20}: {_fmt_int(total)} "
+              f"(entrada {_fmt_int(usage.get('input_tokens', 0))} / "
+              f"saída {_fmt_int(usage.get('output_tokens', 0))}, "
+              f"modelo {usage.get('model')})")
+        cost = estimate_cost_usd(usage)
+        if cost is not None:
+            print(f"{'Custo estimado':>20}: US$ {cost:.4f} (tabela de preços "
+                  f"pública, aproximado)")
     print("=" * 62)
 
 
@@ -74,6 +90,9 @@ def main() -> int:
         description="Cria um anúncio no Mercado Livre a partir de uma pasta de fotos.",
     )
     parser.add_argument("folder", nargs="?", help="pasta com as fotos do produto")
+    parser.add_argument("--template", metavar="FOLDER",
+                        help="gera um JSON modelo de identificação para preencher "
+                             "manualmente, sem chamar a Anthropic")
     parser.add_argument("--auth", action="store_true",
                         help="executa o fluxo OAuth do Mercado Livre (uma vez)")
     parser.add_argument("--activate", metavar="ITEM_ID",
@@ -108,6 +127,15 @@ def main() -> int:
 def _run(args, parser) -> int:
     cfg = load_config(args.config)
 
+    if args.template:
+        folder = Path(args.template).expanduser()
+        template_path = save_template(folder)
+        print(f"Modelo salvo em {template_path}.")
+        print("Preencha os campos de 'identification' com os dados reais do "
+              "produto e depois rode:")
+        print(f"  anunciar --replay {template_path}")
+        return 0
+
     if args.auth:
         run_auth_flow()
         return 0
@@ -120,6 +148,7 @@ def _run(args, parser) -> int:
         return 0
 
     # ---------------------------------------------------------- identificação
+    usage = None
     if args.replay:
         log = load_log(args.replay)
         data = log["identification"]
@@ -135,9 +164,9 @@ def _run(args, parser) -> int:
                 )
     elif args.folder:
         folder = str(Path(args.folder).expanduser())
-        data, images = identify(Path(folder), cfg)
+        data, images, usage = identify(Path(folder), cfg)
     else:
-        parser.error("informe a pasta de fotos (ou use --auth / --activate / --replay)")
+        parser.error("informe a pasta de fotos (ou use --auth / --activate / --replay / --template)")
         return 2
 
     # ------------------------------------------------------- preço e descrição
@@ -162,7 +191,12 @@ def _run(args, parser) -> int:
 
     if have_tokens:
         try:
-            category_id, category_path = resolve_category(ml, data, cfg)
+            if data.get("category_id_override"):
+                category_id = data["category_id_override"]
+                _, path = _category_root_name(ml, category_id)
+                category_path = " > ".join(path) + " (definida manualmente)"
+            else:
+                category_id, category_path = resolve_category(ml, data, cfg)
             listing_type_id, listing_type_name = resolve_listing_type(ml, cfg)
             attributes, attr_notes = build_attributes(ml, category_id, data, cfg)
             terms, term_notes = build_sale_terms(ml, category_id, cfg)
@@ -210,6 +244,7 @@ def _run(args, parser) -> int:
         "category_id": category_id,
         "category_path": category_path,
         "payload": payload,
+        "usage": usage,
     }
 
     # ------------------------------------------------------------- dry-run
@@ -236,6 +271,7 @@ def _run(args, parser) -> int:
                 "status": "dry-run (nada foi enviado ao Mercado Livre)",
                 "warnings": warnings,
                 "log": str(log_path),
+                "usage": usage,
             }
         )
         print(f"\nPara publicar esta execução sem nova identificação:\n"
@@ -295,6 +331,7 @@ def _run(args, parser) -> int:
                f"  (revise e rode: anunciar --activate {item_id})"),
             "warnings": warnings,
             "log": str(log_path),
+            "usage": usage,
         }
     )
     return 0

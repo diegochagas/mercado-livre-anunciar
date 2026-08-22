@@ -45,6 +45,7 @@ _ATTR_SOURCES = {
     "PAGES_NUMBER": "pages",
     "BOOK_PAGES_NUMBER": "pages",
     "BOOK_TITLE": "full_name",
+    "TITLE": "full_name",
     "MAGAZINE_NAME": "full_name",
 }
 

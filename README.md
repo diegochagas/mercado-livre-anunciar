@@ -98,14 +98,40 @@ anunciar --dry-run /pasta/das/fotos
 
 # repetir uma execução usando o log salvo (não chama a Anthropic de novo)
 anunciar --replay ~/.config/anunciar/logs/run-20260807-101530.json
+
+# gerar um JSON modelo para preencher a identificação à mão (sem gastar
+# créditos da Anthropic) e depois publicar com --replay
+anunciar --template /pasta/das/fotos
 ```
 
 Todo run gera um JSON em `~/.config/anunciar/logs/` com a identificação e o
 payload — um dry-run pode ser "promovido" a publicação real via `--replay`, e
 uma falha de validação do ML pode ser reexecutada sem custo de identificação.
 
+Cada identificação (via `identify()`, não via `--replay`/`--template`) imprime
+no resumo final os tokens de entrada/saída gastos na chamada à Anthropic e uma
+estimativa de custo em USD (tabela de preços pública, aproximada).
+
 Se a criação falhar, o corpo completo do erro do ML é impresso, incluindo o
 array `cause`, que aponta o atributo problemático.
+
+### Preenchendo o modelo (`--template`)
+
+O JSON gerado tem o mesmo formato de um log (`folder`, `images`,
+`identification`) e pode ser editado e reenviado com `anunciar --replay
+caminho.json`. Os campos de `identification` seguem o mesmo schema pedido à
+Anthropic em `identify.py` — preencha à mão ou peça para qualquer assistente
+pesquisar e preencher por você.
+
+Um campo extra, opcional, é aceito em `identification`:
+
+- `category_id_override`: força um `category_id` do ML (ex. `"MLB1227"`),
+  pulando a predição automática (`resolve_category`). Útil quando a predição
+  erra a categoria (ex. sugere "Seriados" para uma coleção de livros) ou
+  quando a categoria certa exige um atributo que o item não tem (ex. GTIN/ISBN
+  único para um lote com vários volumes) — nesse caso vale a pena mirar uma
+  categoria irmã mais genérica (ex. "Outros" dentro de "Livros, Revistas e
+  Comics").
 
 ## Observações
 
