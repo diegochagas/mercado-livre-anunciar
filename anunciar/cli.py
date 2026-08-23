@@ -31,6 +31,7 @@ from .listing import (
     upload_pictures,
 )
 from .ml_api import MLClient, MLError
+from .notify import notify_item_created
 from .pricing import apply_rules
 from .runlog import load_log, save_log, save_template
 from .tokens import AuthError, run_auth_flow
@@ -314,6 +315,14 @@ def _run(args, parser) -> int:
         "status": status,
     }
     log_path = save_log({**log_entry, "mode": "publish"})
+
+    notify_warning = notify_item_created(
+        title=payload.get("title") or payload.get("family_name") or title,
+        permalink=item.get("permalink", "-"),
+        status=status,
+    )
+    if notify_warning:
+        warnings.append(notify_warning)
 
     _print_report(
         {

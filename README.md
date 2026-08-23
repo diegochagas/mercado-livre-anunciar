@@ -43,6 +43,7 @@ Copie `.env.example` para `.env` na raiz do projeto e preencha:
 | `ANTHROPIC_API_KEY` | console.anthropic.com |
 | `ML_CLIENT_ID` / `ML_CLIENT_SECRET` | app criado em developers.mercadolivre.com.br |
 | `ML_REDIRECT_URI` | a mesma Redirect URI cadastrada no app |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | opcional — se definidas, envia o link do anúncio pro Telegram quando ele é criado |
 
 ### Criando o app no Mercado Livre
 
