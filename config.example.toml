@@ -24,11 +24,6 @@ import_multiplier_min = 2.5        # item raro só encontrado no exterior:
 import_multiplier_max = 3.0        # preço BRL convertido × 2.5–3.0
 undercut_strategy = "slightly_below_cheapest_similar_condition"
 
-[ai]
-model = "claude-sonnet-4-6"        # modelo usado na identificação (precisa suportar
-                                   # web search + adaptive thinking, Claude 4.6+)
-language = "pt-BR"                 # idioma da descrição gerada
-
 [description]
 rare_import_line = "ITEM RARO, importado do {país}. Item de colecionador!"
 closing_line = "As fotos são do item real que será enviado. Envio com embalagem protegida."

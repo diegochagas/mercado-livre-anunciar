@@ -30,10 +30,6 @@ DEFAULTS = {
         "import_multiplier_max": 3.0,
         "undercut_strategy": "slightly_below_cheapest_similar_condition",
     },
-    "ai": {
-        "model": "claude-sonnet-4-6",
-        "language": "pt-BR",
-    },
     "description": {
         "rare_import_line": "ITEM RARO, importado do {país}. Item de colecionador!",
         "closing_line": (
@@ -64,10 +60,6 @@ price_ending = ".90"
 import_multiplier_min = 2.5
 import_multiplier_max = 3.0
 undercut_strategy = "slightly_below_cheapest_similar_condition"
-
-[ai]
-model = "claude-sonnet-4-6"
-language = "pt-BR"
 
 [description]
 rare_import_line = "ITEM RARO, importado do {país}. Item de colecionador!"

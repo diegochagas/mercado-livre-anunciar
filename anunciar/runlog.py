@@ -7,8 +7,8 @@ from pathlib import Path
 from .config import LOGS_DIR
 from .images import list_images
 
-# Mesmos campos do schema pedido à Anthropic em identify.py — preencha à mão
-# (ou com qualquer outro assistente/pesquisa) e rode `anunciar --replay`.
+# Preencha à mão (identificação e pesquisa de preço feitas por quem estiver
+# rodando o comando) e rode `anunciar --replay`.
 TEMPLATE_IDENTIFICATION = {
     "title_ml": None,
     "product_type": None,

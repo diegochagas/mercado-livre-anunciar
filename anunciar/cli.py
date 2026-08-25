@@ -1,11 +1,15 @@
 """CLI do anunciar.
 
-Uso típico:
-    anunciar /caminho/da/pasta          # identifica, precifica e cria pausado
-    anunciar --dry-run /caminho/pasta   # tudo, menos chamadas de escrita no ML
+A identificação do produto (o que é, preço de mercado, estado de conservação)
+é sempre feita à mão — por quem estiver rodando o comando, olhando as fotos e
+pesquisando o preço — e não por uma chamada de API. Fluxo:
+
+    anunciar /caminho/da/pasta          # gera um JSON modelo em branco
+    # preencha 'identification' no JSON com os dados reais do produto
+    anunciar --replay template.json     # precifica, resolve categoria e cria pausado
+    anunciar --dry-run --replay ...     # mesma coisa, sem chamadas de escrita no ML
     anunciar --auth                     # fluxo OAuth único
     anunciar --activate MLB123456789    # ativa um anúncio revisado
-    anunciar --replay run-...json       # repete uma execução sem nova identificação
 """
 
 import argparse
@@ -17,7 +21,7 @@ from dotenv import load_dotenv
 from . import tokens as tk
 from .config import load_config
 from .description import build_description
-from .identify import IdentificationError, estimate_cost_usd, identify
+from .validation import IdentificationError, validate_identification
 from .listing import (
     _category_root_name,
     build_attributes,
@@ -46,10 +50,6 @@ def _fmt_price(value: float) -> str:
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def _fmt_int(value: int) -> str:
-    return f"{value:,}".replace(",", ".")
-
-
 def _print_report(info: dict) -> None:
     print("\n" + "=" * 62)
     print("RESUMO DO ANÚNCIO")
@@ -71,17 +71,6 @@ def _print_report(info: dict) -> None:
         print(f"{'Aviso':>20}: {warning}")
     if info.get("log"):
         print(f"{'Log':>20}: {info['log']}")
-    usage = info.get("usage")
-    if usage:
-        total = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
-        print(f"{'Tokens (Anthropic)':>20}: {_fmt_int(total)} "
-              f"(entrada {_fmt_int(usage.get('input_tokens', 0))} / "
-              f"saída {_fmt_int(usage.get('output_tokens', 0))}, "
-              f"modelo {usage.get('model')})")
-        cost = estimate_cost_usd(usage)
-        if cost is not None:
-            print(f"{'Custo estimado':>20}: US$ {cost:.4f} (tabela de preços "
-                  f"pública, aproximado)")
     print("=" * 62)
 
 
@@ -90,20 +79,20 @@ def main() -> int:
         prog="anunciar",
         description="Cria um anúncio no Mercado Livre a partir de uma pasta de fotos.",
     )
-    parser.add_argument("folder", nargs="?", help="pasta com as fotos do produto")
-    parser.add_argument("--template", metavar="FOLDER",
-                        help="gera um JSON modelo de identificação para preencher "
-                             "manualmente, sem chamar a Anthropic")
+    parser.add_argument("folder", nargs="?",
+                        help="pasta com as fotos do produto — gera um JSON modelo "
+                             "de identificação em branco para preencher à mão e "
+                             "depois publicar com --replay")
     parser.add_argument("--auth", action="store_true",
                         help="executa o fluxo OAuth do Mercado Livre (uma vez)")
     parser.add_argument("--activate", metavar="ITEM_ID",
                         help="ativa um anúncio criado pausado")
     parser.add_argument("--dry-run", action="store_true",
-                        help="identifica e monta tudo sem chamadas de escrita no ML")
+                        help="monta tudo sem chamadas de escrita no ML")
     parser.add_argument("--publish", action="store_true",
                         help="deixa o anúncio ativo em vez de pausado para revisão")
     parser.add_argument("--replay", metavar="LOGFILE",
-                        help="reusa a identificação de um log anterior")
+                        help="publica a identificação preenchida em um template/log")
     parser.add_argument("--config", metavar="PATH",
                         help="config TOML alternativa (padrão ~/.config/anunciar/config.toml)")
     args = parser.parse_args()
@@ -128,15 +117,6 @@ def main() -> int:
 def _run(args, parser) -> int:
     cfg = load_config(args.config)
 
-    if args.template:
-        folder = Path(args.template).expanduser()
-        template_path = save_template(folder)
-        print(f"Modelo salvo em {template_path}.")
-        print("Preencha os campos de 'identification' com os dados reais do "
-              "produto e depois rode:")
-        print(f"  anunciar --replay {template_path}")
-        return 0
-
     if args.auth:
         run_auth_flow()
         return 0
@@ -148,27 +128,34 @@ def _run(args, parser) -> int:
         print(f"Link: {result.get('permalink', '-')}")
         return 0
 
-    # ---------------------------------------------------------- identificação
-    usage = None
-    if args.replay:
-        log = load_log(args.replay)
-        data = log["identification"]
-        images = [Path(p) for p in log.get("images", [])]
-        folder = log.get("folder", "")
-        print(f"Replay de {args.replay} (sem nova chamada à Anthropic).")
-        if not args.dry_run:
-            missing = [str(p) for p in images if not p.exists()]
-            if missing:
-                raise SystemExit(
-                    "Fotos do log não encontradas (necessárias para upload): "
-                    + ", ".join(missing)
-                )
-    elif args.folder:
-        folder = str(Path(args.folder).expanduser())
-        data, images, usage = identify(Path(folder), cfg)
-    else:
-        parser.error("informe a pasta de fotos (ou use --auth / --activate / --replay / --template)")
+    if args.folder and not args.replay:
+        template_path = save_template(Path(args.folder).expanduser())
+        print(f"Modelo salvo em {template_path}.")
+        print("Preencha os campos de 'identification' com os dados reais do "
+              "produto (identificação e pesquisa de preço feitas à mão) e "
+              "depois rode:")
+        print(f"  anunciar --replay {template_path}")
+        return 0
+
+    if not args.replay:
+        parser.error("informe a pasta de fotos (gera o template) ou --replay "
+                     "(ou use --auth / --activate)")
         return 2
+
+    # ---------------------------------------------------------- identificação
+    log = load_log(args.replay)
+    data = log["identification"]
+    validate_identification(data)
+    images = [Path(p) for p in log.get("images", [])]
+    folder = log.get("folder", "")
+    print(f"Replay de {args.replay}.")
+    if not args.dry_run:
+        missing = [str(p) for p in images if not p.exists()]
+        if missing:
+            raise SystemExit(
+                "Fotos do log não encontradas (necessárias para upload): "
+                + ", ".join(missing)
+            )
 
     # ------------------------------------------------------- preço e descrição
     price, warnings = apply_rules(data, cfg)
@@ -245,7 +232,6 @@ def _run(args, parser) -> int:
         "category_id": category_id,
         "category_path": category_path,
         "payload": payload,
-        "usage": usage,
     }
 
     # ------------------------------------------------------------- dry-run
@@ -272,10 +258,9 @@ def _run(args, parser) -> int:
                 "status": "dry-run (nada foi enviado ao Mercado Livre)",
                 "warnings": warnings,
                 "log": str(log_path),
-                "usage": usage,
             }
         )
-        print(f"\nPara publicar esta execução sem nova identificação:\n"
+        print(f"\nPara publicar esta mesma execução:\n"
               f"  anunciar --replay {log_path}")
         return 0
 
@@ -340,7 +325,6 @@ def _run(args, parser) -> int:
                f"  (revise e rode: anunciar --activate {item_id})"),
             "warnings": warnings,
             "log": str(log_path),
-            "usage": usage,
         }
     )
     return 0
