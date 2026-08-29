@@ -12,7 +12,6 @@ listing_type = "premium"        # "premium" é resolvido dinamicamente (hoje: go
 available_quantity = 1
 warranty = "none"               # "none" = Sem garantia
 availability_days = 1           # prazo de disponibilidade/expedição (sale_term)
-default_status = "paused"       # anúncio criado pausado para revisão; --publish ignora
 
 [shipping]
 free_shipping_threshold = 200.00   # preço > limite → frete grátis (por conta do vendedor)

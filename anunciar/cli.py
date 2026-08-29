@@ -6,10 +6,10 @@ pesquisando o preço — e não por uma chamada de API. Fluxo:
 
     anunciar /caminho/da/pasta          # gera um JSON modelo em branco
     # preencha 'identification' no JSON com os dados reais do produto
-    anunciar --replay template.json     # precifica, resolve categoria e cria pausado
+    anunciar --replay template.json     # precifica, resolve categoria e cria ativo
     anunciar --dry-run --replay ...     # mesma coisa, sem chamadas de escrita no ML
     anunciar --auth                     # fluxo OAuth único
-    anunciar --activate MLB123456789    # ativa um anúncio revisado
+    anunciar --activate MLB123456789    # ativa um anúncio que ficou pausado
 """
 
 import argparse
@@ -35,7 +35,7 @@ from .listing import (
     upload_pictures,
 )
 from .ml_api import MLClient, MLError
-from .notify import notify_item_created
+from .notify import notify_error, notify_success
 from .pricing import apply_rules
 from .runlog import load_log, save_log, save_template
 from .tokens import AuthError, run_auth_flow
@@ -86,11 +86,10 @@ def main() -> int:
     parser.add_argument("--auth", action="store_true",
                         help="executa o fluxo OAuth do Mercado Livre (uma vez)")
     parser.add_argument("--activate", metavar="ITEM_ID",
-                        help="ativa um anúncio criado pausado")
+                        help="ativa um anúncio que ficou pausado (utilitário manual; "
+                             "--replay já cria ativo por padrão)")
     parser.add_argument("--dry-run", action="store_true",
                         help="monta tudo sem chamadas de escrita no ML")
-    parser.add_argument("--publish", action="store_true",
-                        help="deixa o anúncio ativo em vez de pausado para revisão")
     parser.add_argument("--replay", metavar="LOGFILE",
                         help="publica a identificação preenchida em um template/log")
     parser.add_argument("--config", metavar="PATH",
@@ -101,15 +100,20 @@ def main() -> int:
     try:
         return _run(args, parser)
     except (MLError,) as exc:
+        causes = exc.causes()
+        message = exc.pretty()
+        if causes:
+            message += "\nCausas: " + "; ".join(causes)
+        notify_error(message)
         print("\nERRO da API do Mercado Livre:", file=sys.stderr)
         print(exc.pretty(), file=sys.stderr)
-        causes = exc.causes()
         if causes:
             print("\nCausas (cause):", file=sys.stderr)
             for cause in causes:
                 print(f"  - {cause}", file=sys.stderr)
         return 1
     except (AuthError, IdentificationError) as exc:
+        notify_error(str(exc))
         print(f"\nERRO: {exc}", file=sys.stderr)
         return 1
 
@@ -288,11 +292,6 @@ def _run(args, parser) -> int:
         warnings.append(f"Falha ao definir a descrição: {exc.pretty()}")
 
     status = item.get("status", "active")
-    if args.publish:
-        pass  # permanece ativo
-    elif cfg.listing["default_status"] == "paused" and status != "paused":
-        ml.update_item(item_id, {"status": "paused"})
-        status = "paused"
 
     log_entry["item"] = {
         "id": item_id,
@@ -301,11 +300,7 @@ def _run(args, parser) -> int:
     }
     log_path = save_log({**log_entry, "mode": "publish"})
 
-    notify_warning = notify_item_created(
-        title=payload.get("title") or payload.get("family_name") or title,
-        permalink=item.get("permalink", "-"),
-        status=status,
-    )
+    notify_warning = notify_success(item.get("permalink", "-"))
     if notify_warning:
         warnings.append(notify_warning)
 
@@ -320,9 +315,7 @@ def _run(args, parser) -> int:
                          f"{cfg.listing['available_quantity']} un.",
             "item_id": item_id,
             "permalink": item.get("permalink", "-"),
-            "status": status
-            + ("" if args.publish else
-               f"  (revise e rode: anunciar --activate {item_id})"),
+            "status": status,
             "warnings": warnings,
             "log": str(log_path),
         }

@@ -68,12 +68,12 @@ Depois de preencher o JSON, publique:
 ./.venv/bin/anunciar --replay /caminho/do/template.json
 ```
 
-- O `--replay` precifica, resolve categoria/atributos, cria o item
-  **pausado** para revisão, publica a descrição e **envia a URL do anúncio no
-  Telegram automaticamente** (via `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` do
-  `.env`).
-- Só use `--publish` (anúncio já ativo, sem revisão) se o Diego pedir
-  explicitamente.
+- O `--replay` precifica, resolve categoria/atributos, cria o item **já
+  ativo** (nunca pausado) e publica a descrição.
+- Notificação no Telegram (via `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` do
+  `.env`) é **silenciosa em caso de sucesso**: só envia a URL final do
+  anúncio, sem nenhum texto extra. Só envia uma mensagem com detalhes do erro
+  se a criação falhar.
 
 ## Depois de rodar
 
@@ -82,9 +82,8 @@ Depois de preencher o JSON, publique:
    se apareceu, ou se `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` não estiverem no
    `.env`, avise o Diego que o Telegram não recebeu o link e cole o permalink
    na conversa.
-3. Reporte ao Diego: título, preço, categoria, link, e lembre que o anúncio
-   está pausado — para ativar após revisão:
-   `./.venv/bin/anunciar --activate MLB1234567890`.
+3. Reporte ao Diego: título, preço, categoria e link. O anúncio já foi criado
+   **ativo** — não precisa de revisão/ativação manual.
 
 ## Erros e correções
 

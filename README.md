@@ -26,8 +26,8 @@ O que acontece:
    descrição em pt-BR só com os fatos preenchidos.
 4. Resolve categoria (predictor + fallback em "Livros, Revistas e Comics"),
    atributos, garantia ("Sem garantia") e tipo Premium dinamicamente.
-5. Sobe as fotos, cria o item **pausado** para revisão, publica a descrição e
-   imprime o resumo com o link.
+5. Sobe as fotos, cria o item **já ativo** (nunca pausado), publica a
+   descrição e imprime o resumo com o link.
 
 ## Instalação
 
@@ -49,7 +49,7 @@ Copie `.env.example` para `.env` na raiz do projeto e preencha:
 |---|---|
 | `ML_CLIENT_ID` / `ML_CLIENT_SECRET` | app criado em developers.mercadolivre.com.br |
 | `ML_REDIRECT_URI` | a mesma Redirect URI cadastrada no app |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | opcional — se definidas, envia o link do anúncio pro Telegram quando ele é criado |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | opcional — se definidas, envia só a URL do anúncio pro Telegram quando ele é criado com sucesso, ou um alerta de erro se a criação falhar |
 
 ### Criando o app no Mercado Livre
 
@@ -76,7 +76,7 @@ renovados automaticamente a cada execução (o refresh token do ML é de uso
 Criada automaticamente na primeira execução com os padrões do Diego:
 
 - sempre **usado**, quantidade 1, **Premium**, **sem garantia**, disponibilidade
-  1 dia, criado **pausado**;
+  1 dia, criado **já ativo** (nunca pausado);
 - frete grátis somente se preço > R$ 200 (nunca Flex);
 - preço termina em ,90; item raro importado = preço exterior × 2,5–3.
 
@@ -95,12 +95,11 @@ anunciar /pasta/das/fotos
 
 # preencha "identification" no JSON gerado à mão (veja a seção abaixo) e então:
 anunciar --replay ~/.config/anunciar/logs/template-20260825-101530.json
+# cria o anúncio já ativo (nunca pausado) e publica a descrição
 
-# revisar no site e então ativar
+# --activate existe só como utilitário manual, para o caso raro de um item
+# ter ficado pausado (ex.: regra da categoria no ML) e precisar ser ativado
 anunciar --activate MLB1234567890
-
-# publicar já ativo, sem pausa para revisão
-anunciar --publish --replay ~/.config/anunciar/logs/template-....json
 
 # ensaio: precifica e monta o payload SEM escrever no ML
 anunciar --dry-run --replay ~/.config/anunciar/logs/template-....json
@@ -139,7 +138,7 @@ O repositório inclui uma skill em `.claude/skills/mercado-livre-anunciar/`
 (instalada globalmente via symlink em `~/.claude/skills/`). Basta pedir ao
 Claude "anuncie a pasta X" (com detalhes opcionais do produto) que ele mesmo
 identifica o produto e o preço, preenche o template, roda o `--replay`, cria
-o anúncio pausado via API e confirma o envio da URL no Telegram.
+o anúncio já ativo via API e confirma o envio da URL no Telegram.
 
 ## Observações
 

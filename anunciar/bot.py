@@ -10,8 +10,8 @@ Fluxo no Telegram (só responde ao TELEGRAM_CHAT_ID do .env):
                        (ex.: "é novo, nunca usado", "edição de 2019", "quero
                        vender por R$80") repassado à identificação
     /finishanuncio  -> roda a identificação (Claude Code headless com a
-                       skill mercado-livre-anunciar), cria o anúncio pausado,
-                       ativa, e manda o link final no Telegram
+                       skill mercado-livre-anunciar), cria o anúncio já ativo,
+                       e manda o link final no Telegram
 
 Rodar (laptop ligado, para teste manual — não pelo Claude Code):
     ./.venv/bin/python -m anunciar.bot
@@ -112,9 +112,8 @@ def _process_photo(token: str, session: Session, file_id: str) -> str:
 
 
 def _run_headless_claude(folder: Path, details: list[str]) -> dict:
-    """Identificação + `anunciar --replay` (cria pausado) via Claude Code
-    headless, usando a skill mercado-livre-anunciar. A ativação NÃO é feita
-    aqui — é um passo determinístico separado (_activate)."""
+    """Identificação + `anunciar --replay` (cria já ativo) via Claude Code
+    headless, usando a skill mercado-livre-anunciar."""
     details_block = ""
     if details:
         bullets = "\n".join(f"- {d}" for d in details)
@@ -126,11 +125,10 @@ def _run_headless_claude(folder: Path, details: list[str]) -> dict:
     prompt = (
         "Use a skill mercado-livre-anunciar para identificar o produto nas "
         f"fotos em {folder} (fundo já removido, quadradas) e criar o "
-        "anúncio no Mercado Livre com `anunciar --replay` (fica pausado — "
-        "NÃO rode --activate nem --publish, isso é feito à parte). Pesquise "
-        "produto e preço na web como a skill descreve. Ao final responda "
-        "apenas com item_id, permalink, title, price_brl e status do "
-        "anúncio criado." + details_block
+        "anúncio no Mercado Livre com `anunciar --replay` (já cria ativo). "
+        "Pesquise produto e preço na web como a skill descreve. Ao final "
+        "responda apenas com item_id, permalink, title, price_brl e status "
+        "do anúncio criado." + details_block
     )
     result = subprocess.run(
         [
@@ -163,18 +161,6 @@ def _run_headless_claude(folder: Path, details: list[str]) -> dict:
         )
 
 
-def _activate(item_id: str) -> None:
-    result = subprocess.run(
-        [sys.executable, "-m", "anunciar.cli", "--activate", item_id],
-        cwd=PROJECT_DIR,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Falha ao ativar {item_id}: {result.stderr}")
-
-
 def _finish(token: str, chat_id: str, session: Session) -> None:
     if session.count == 0:
         _send(token, chat_id, "Nenhuma foto recebida nessa sessão.")
@@ -193,7 +179,6 @@ def _finish(token: str, chat_id: str, session: Session) -> None:
                 f"⚠️ Anúncio não foi criado: {info.get('status') or '(sem detalhes)'}",
             )
             return
-        _activate(info["item_id"])
         _send(
             token, chat_id,
             f"✅ Anúncio ativo: {info.get('title', '')}\n{info['permalink']}",

@@ -32,9 +32,14 @@ anunciar --template /caminho/das/fotos
 anunciar --replay /caminho/do/template.json
 ```
 
-Quando o anúncio é criado, o CLI envia a URL no Telegram automaticamente
-(`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` no `.env`); se o resumo mostrar
-`Falha ao notificar no Telegram`, repasse o link manualmente ao Diego.
+Regra fixa: o anúncio é sempre criado **já ativo** — nunca pausado para
+revisão. Não existe flag para pausar a publicação.
+
+Notificação no Telegram (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` no `.env`) é
+**silenciosa em caso de sucesso**: envia só a URL final do anúncio, sem
+título/status. Só manda uma mensagem de alerta se a criação **falhar**; se o
+resumo mostrar `Falha ao notificar no Telegram` (falha ao entregar a própria
+notificação), repasse o link manualmente ao Diego.
 
 Note bem:
 
