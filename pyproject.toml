@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 anunciar = "anunciar.cli:main"
+anunciar-bot = "anunciar.bot:main"
 
 [tool.setuptools.packages.find]
 include = ["anunciar*"]
