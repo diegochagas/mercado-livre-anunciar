@@ -63,13 +63,29 @@ Copie `.env.example` para `.env` na raiz do projeto e preencha:
 ## Autenticação (uma vez)
 
 ```bash
+cd ~/Projects/mercado-livre-anunciar
+source .venv/bin/activate
 anunciar --auth
 ```
 
-Abra a URL impressa, autorize, cole a URL de redirect (ou só o `code`). Os
-tokens ficam em `~/.config/anunciar/tokens.json` (permissão 600) e são
+O comando monta a URL de autorização do ML com o `ML_CLIENT_ID` e a
+`ML_REDIRECT_URI` do seu `.env`, imprime essa URL no terminal e fica
+aguardando o `code`. Passo a passo:
+
+1. Abra a URL impressa no navegador, **logado na conta que vai vender**.
+2. Clique em "Autorizar". O navegador é redirecionado para a sua
+   `ML_REDIRECT_URI` com `?code=TG-...` no final — essa é a "URL de
+   redirect". Se a Redirect URI apontar para uma página que não existe
+   (ex. `https://example.com/callback`), o navegador vai mostrar um
+   erro/404: **não tem problema** — o que interessa é só a URL que ficou
+   na barra de endereço.
+3. Copie a URL completa da barra de endereço (ou apenas o `code=TG-...`)
+   e cole de volta no terminal, onde o comando está esperando.
+
+Os tokens ficam em `~/.config/anunciar/tokens.json` (permissão 600) e são
 renovados automaticamente a cada execução (o refresh token do ML é de uso
-único; o novo par é sempre persistido).
+único; o novo par é sempre persistido). O `code` expira em poucos minutos —
+se a troca falhar por demora, rode `anunciar --auth` de novo e repita.
 
 ## Configuração (`~/.config/anunciar/config.toml`)
 
@@ -131,6 +147,33 @@ Um campo extra, opcional, é aceito em `identification`:
   único para um lote com vários volumes) — nesse caso vale a pena mirar uma
   categoria irmã mais genérica (ex. "Outros" dentro de "Livros, Revistas e
   Comics").
+
+## Bot do Telegram (`anunciar-bot`)
+
+Fluxo alternativo sem terminal: você manda as fotos pelo Telegram, o bot
+baixa cada uma, remove o fundo (API self-hosted do withoutbg), monta o
+quadrado branco e dispara a identificação + criação do anúncio.
+
+Pré-requisitos no `.env`: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` e
+`WITHOUTBG_URL`, além do ML já autenticado (`anunciar --auth` acima).
+
+```bash
+cd ~/Projects/mercado-livre-anunciar
+./.venv/bin/anunciar-bot
+```
+
+(Equivalente: `./.venv/bin/python -m anunciar.bot`. O bot roda em primeiro
+plano fazendo long-polling no Telegram — deixe o terminal aberto e pare com
+`Ctrl+C`. Ele só responde ao chat do `TELEGRAM_CHAT_ID`.)
+
+Comandos no chat do Telegram:
+
+- `/startanuncio` — inicia uma sessão (pasta nova de fotos);
+- mande as **fotos** (processadas na ordem de chegada) e, opcionalmente,
+  **texto livre** com detalhes do produto ("é novo", "quero R$80"...);
+- `/finishanuncio` — identifica o produto (Claude Code headless com a skill
+  deste repo — requer o CLI `claude` instalado na máquina), cria o anúncio
+  já ativo e manda o link final no chat.
 
 ## Skill do Claude Code (`mercado-livre-anunciar`)
 
