@@ -148,32 +148,59 @@ Um campo extra, opcional, é aceito em `identification`:
   categoria irmã mais genérica (ex. "Outros" dentro de "Livros, Revistas e
   Comics").
 
-## Bot do Telegram (`anunciar-bot`)
+## Bot do Telegram (`start_bot.py`)
 
-Fluxo alternativo sem terminal: você manda as fotos pelo Telegram, o bot
-baixa cada uma, remove o fundo (API self-hosted do withoutbg), monta o
-quadrado branco e dispara a identificação + criação do anúncio.
+Fluxo alternativo sem terminal: fotografe o produto sobre um quadro branco
+físico e mande as fotos pelo Telegram — o bot baixa cada uma, redimensiona
+em quadrado (o fundo branco já vem na própria foto, sem remoção de fundo)
+e dispara a identificação + criação do anúncio.
 
-Pré-requisitos no `.env`: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` e
-`WITHOUTBG_URL`, além do ML já autenticado (`anunciar --auth` acima).
+Pré-requisitos no `.env`: `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`, além
+do ML já autenticado (`anunciar --auth` acima, uma vez).
 
 ```bash
 cd ~/Projects/mercado-livre-anunciar
-./.venv/bin/anunciar-bot
+./.venv/bin/python start_bot.py
 ```
 
-(Equivalente: `./.venv/bin/python -m anunciar.bot`. O bot roda em primeiro
-plano fazendo long-polling no Telegram — deixe o terminal aberto e pare com
-`Ctrl+C`. Ele só responde ao chat do `TELEGRAM_CHAT_ID`.)
+Use sempre `start_bot.py` (na raiz do repo, não `anunciar-bot` direto) para
+subir o bot: ele confere se há um token/refresh token válido do Mercado
+Livre salvo **antes** de começar o long-polling e, se não houver, roda o
+fluxo interativo de `--auth` ali mesmo no terminal. Sem isso, a falta de
+token só aparece depois que o Diego já mandou as fotos pelo Telegram e
+pediu `/finishanuncio` — nesse ponto o bot não tem como pedir o `code` do
+OAuth interativamente, e o anúncio falha com "Sem refresh token salvo".
+
+(Equivalente ao `anunciar-bot` sozinho depois da checagem:
+`./.venv/bin/python -m anunciar.bot`. O bot roda em primeiro plano fazendo
+long-polling no Telegram — deixe o terminal aberto e pare com `Ctrl+C`. Ele
+só responde ao chat do `TELEGRAM_CHAT_ID`.)
+
+Enquanto roda, o bot imprime no terminal cada passo em andamento
+(foto recebida, redimensionando, salvando imagem, identificando e
+publicando...) — útil pra acompanhar ao vivo o que está acontecendo.
 
 Comandos no chat do Telegram:
 
 - `/startanuncio` — inicia uma sessão (pasta nova de fotos);
-- mande as **fotos** (processadas na ordem de chegada) e, opcionalmente,
-  **texto livre** com detalhes do produto ("é novo", "quero R$80"...);
+- mande as **fotos** (processadas na ordem de chegada, já sobre o quadro
+  branco) e, opcionalmente, **texto livre** com detalhes do produto ("é
+  novo", "quero R$80"...);
 - `/finishanuncio` — identifica o produto (Claude Code headless com a skill
-  deste repo — requer o CLI `claude` instalado na máquina), cria o anúncio
-  já ativo e manda o link final no chat.
+  deste repo — requer o CLI `claude` instalado na máquina) e cria o anúncio
+  já ativo. O chat só recebe **uma mensagem no final**: o link do anúncio
+  ativo em caso de sucesso, ou um alerta se algo falhar — sem mensagens
+  intermediárias de progresso.
+
+### Token expirado/ausente no meio de uma sessão
+
+Se mesmo assim o bot cair com "Sem refresh token salvo" (ex.: revogou o
+acesso do app no Mercado Livre, ou o `~/.config/anunciar/tokens.json` foi
+apagado), a sessão do Telegram já processada **não se perde**: o template
+com a identificação fica salvo em `~/.config/anunciar/logs/template-*.json`
+(veja o path no erro). Rode `anunciar --auth` de novo e depois
+`anunciar --replay ~/.config/anunciar/logs/template-XXXXXXXX-XXXXXX.json`
+para publicar sem repetir a identificação.
 
 ## Skill do Claude Code (`mercado-livre-anunciar`)
 

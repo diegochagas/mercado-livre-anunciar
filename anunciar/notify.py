@@ -9,6 +9,8 @@ API_BASE = "https://api.telegram.org"
 
 
 def _send(text: str) -> str | None:
+    if os.environ.get("ANUNCIAR_SKIP_NOTIFY"):
+        return None  # quem chamou o CLI já vai notificar por conta própria
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat_id:
