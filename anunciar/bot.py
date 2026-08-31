@@ -1,12 +1,11 @@
 """Bot Telegram: recebe fotos (produto já fotografado sobre o quadro branco
-físico), redimensiona em quadrado e dispara a criação + ativação do anúncio
-via Claude Code headless.
+físico) e dispara a criação + ativação do anúncio via Claude Code headless.
 
 Fluxo no Telegram (só responde ao TELEGRAM_CHAT_ID do .env):
     /startanuncio   -> inicia uma sessão nova (pasta limpa)
-    <enviar fotos>  -> cada foto é baixada, redimensionada em quadrado
-                       (fundo branco do quadro já vem na própria foto) e é
-                       salva em ordem de chegada na pasta da sessão
+    <enviar fotos>  -> cada foto é baixada e salva como o Telegram manda
+                       (sem nenhum processamento), em ordem de chegada na
+                       pasta da sessão
     <texto livre>   -> qualquer mensagem de texto (que não seja um comando)
                        enviada durante a sessão vira um "detalhe" do produto
                        (ex.: "é novo, nunca usado", "edição de 2019", "quero
@@ -35,7 +34,6 @@ import requests
 from dotenv import load_dotenv
 
 from .config import CONFIG_DIR
-from .square import to_square_white_jpeg
 
 API_BASE = "https://api.telegram.org"
 SESSIONS_DIR = CONFIG_DIR / "bot-sessions"
@@ -116,12 +114,10 @@ class Session:
 def _process_photo(token: str, session: Session, file_id: str) -> str:
     _log("Foto recebida, baixando do Telegram...")
     raw = _download_file(token, file_id)
-    _log("Redimensionando em quadrado...")
-    square = to_square_white_jpeg(raw)
     session.count += 1
     name = f"{session.count:03d}.jpg"
     _log(f"Salvando {name} em {session.folder}...")
-    (session.folder / name).write_bytes(square)
+    (session.folder / name).write_bytes(raw)
     return name
 
 
@@ -138,9 +134,9 @@ def _run_headless_claude(folder: Path, details: list[str]) -> dict:
         )
     prompt = (
         "Use a skill mercado-livre-anunciar para identificar o produto nas "
-        f"fotos em {folder} (já quadradas, produto sobre o quadro branco) e "
-        "criar o anúncio no Mercado Livre com `anunciar --replay` (já cria "
-        "ativo). Pesquise produto e preço na web como a skill descreve. Ao "
+        f"fotos em {folder} (produto sobre o quadro branco) e criar o "
+        "anúncio no Mercado Livre com `anunciar --replay` (já cria ativo). "
+        "Pesquise produto e preço na web como a skill descreve. Ao "
         "final responda apenas com item_id, permalink, title, price_brl e "
         "status do anúncio criado." + details_block
     )

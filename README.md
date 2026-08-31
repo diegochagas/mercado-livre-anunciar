@@ -151,9 +151,9 @@ Um campo extra, opcional, é aceito em `identification`:
 ## Bot do Telegram (`start_bot.py`)
 
 Fluxo alternativo sem terminal: fotografe o produto sobre um quadro branco
-físico e mande as fotos pelo Telegram — o bot baixa cada uma, redimensiona
-em quadrado (o fundo branco já vem na própria foto, sem remoção de fundo)
-e dispara a identificação + criação do anúncio.
+físico e mande as fotos pelo Telegram — o bot baixa cada uma exatamente
+como o Telegram manda (sem nenhum processamento de imagem) e dispara a
+identificação + criação do anúncio.
 
 Pré-requisitos no `.env`: `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`, além
 do ML já autenticado (`anunciar --auth` acima, uma vez).
@@ -177,8 +177,8 @@ long-polling no Telegram — deixe o terminal aberto e pare com `Ctrl+C`. Ele
 só responde ao chat do `TELEGRAM_CHAT_ID`.)
 
 Enquanto roda, o bot imprime no terminal cada passo em andamento
-(foto recebida, redimensionando, salvando imagem, identificando e
-publicando...) — útil pra acompanhar ao vivo o que está acontecendo.
+(foto recebida, salvando imagem, identificando e publicando...) — útil pra
+acompanhar ao vivo o que está acontecendo.
 
 Comandos no chat do Telegram:
 
