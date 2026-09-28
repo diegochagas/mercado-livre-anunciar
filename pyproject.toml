@@ -12,9 +12,19 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
 [project.scripts]
 anunciar = "anunciar.cli:main"
 anunciar-bot = "anunciar.bot:main"
+anunciar-servico = "anunciar.servico_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["anunciar*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

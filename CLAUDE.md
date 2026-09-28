@@ -57,3 +57,12 @@ Note bem:
   tem (ex. GTIN/ISBN único para item sem editora oficial), use
   `category_id_override` no JSON de identificação mirando uma categoria
   irmã mais genérica (ex. "Outros" dentro de "Livros, Revistas e Comics").
+
+## Serviços (classificado)
+
+Anúncio de **serviço** (restauração de fotos, aulas, manutenção…) usa o CLI
+`anunciar-servico` e a skill `mercado-livre-anunciar-servico`, nunca o
+`anunciar` de produto. Serviços (MLB1540) só aceitam `buying_mode:
+classified`, não aceitam `condition` e não têm frete. O código está em
+`anunciar/servico.py` + `anunciar/servico_cli.py`, com testes em
+`tests/test_servico.py` (`scripts/check`).

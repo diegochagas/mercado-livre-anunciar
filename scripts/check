@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Gate local: lint + testes. Ruff cobre só os arquivos já adequados ao lint;
+# amplie a lista ao tocar nos demais módulos.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+LINTED=(anunciar/servico.py anunciar/servico_cli.py tests)
+./.venv/bin/ruff check "${LINTED[@]}"
+./.venv/bin/ruff format --check "${LINTED[@]}"
+./.venv/bin/pytest -q
