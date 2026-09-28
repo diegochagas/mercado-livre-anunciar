@@ -269,7 +269,6 @@ def main() -> int:
                         continue
                     _log(f"Detalhe recebido: {text}")
                     session.details.append(text)
-                    _send(token, chat_id, f"📝 Detalhe adicionado: {text}")
                 elif text.startswith("/"):
                     _send(token, chat_id, f"Comando desconhecido: {text}")
     except KeyboardInterrupt:
