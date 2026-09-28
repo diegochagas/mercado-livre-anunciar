@@ -47,8 +47,12 @@ os campos de `identification`. Preencha você mesmo (leia as fotos com a
 ferramenta Read, pesquise o produto e o preço com WebSearch), seguindo estas
 regras:
 
-- Estado: `used` (usado) é o padrão da conta; ajuste `condition_notes` para
-  refletir a realidade de cada item, mesmo que a config geral seja "usado".
+- Estado: `used` (usado) é o padrão da conta. Preencha sempre
+  `condition_notes` com a realidade do item. Se o item for **novo/lacrado**
+  (o Diego disse isso ou está claro nas fotos), defina também
+  `condition_override: "new"` no JSON — sem isso o anúncio sai como usado
+  mesmo com `condition_notes` dizendo o contrário, porque só o `override`
+  muda o atributo `ITEM_CONDITION` enviado à API.
 - Tipo de anúncio Premium, sem garantia — isso já é resolvido pelo config,
   não precisa preencher no JSON.
 - Frete grátis só valerá acima de R$200 (regra de preço aplicada

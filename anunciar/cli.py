@@ -217,6 +217,7 @@ def _run(args, parser) -> int:
         shipping=shipping,
         cfg=cfg,
         up_seller=up_seller,
+        condition=data.get("condition_override") or cfg.listing["condition"],
         pictures=None,
     )
 
@@ -257,7 +258,7 @@ def _run(args, parser) -> int:
                 "price": _fmt_price(price),
                 "shipping": frete,
                 "listing_type": f"{listing_type_id} ({listing_type_name})",
-                "condition": f"{cfg.listing['condition']} — "
+                "condition": f"{payload['condition']} — "
                              f"{cfg.listing['available_quantity']} un.",
                 "status": "dry-run (nada foi enviado ao Mercado Livre)",
                 "warnings": warnings,
@@ -311,7 +312,7 @@ def _run(args, parser) -> int:
             "price": _fmt_price(price),
             "shipping": frete,
             "listing_type": f"{listing_type_id} ({listing_type_name})",
-            "condition": f"{cfg.listing['condition']} — "
+            "condition": f"{payload['condition']} — "
                          f"{cfg.listing['available_quantity']} un.",
             "item_id": item_id,
             "permalink": item.get("permalink", "-"),

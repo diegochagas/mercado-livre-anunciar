@@ -188,7 +188,8 @@ def build_attributes(
 ) -> tuple[list[dict], list[str]]:
     notes: list[str] = []
     attrs: list[dict] = []
-    condition_name = "usado" if cfg.listing["condition"] == "used" else "novo"
+    condition = data.get("condition_override") or cfg.listing["condition"]
+    condition_name = "usado" if condition == "used" else "novo"
 
     for attr in ml.category_attributes(category_id):
         attr_id = attr.get("id", "")
@@ -287,6 +288,7 @@ def build_payload(
     shipping: dict,
     cfg: Config,
     up_seller: bool,
+    condition: str | None = None,
     pictures: list[dict] | None = None,
 ) -> dict:
     payload = {
@@ -296,7 +298,7 @@ def build_payload(
         "currency_id": "BRL",
         "available_quantity": int(cfg.listing["available_quantity"]),
         "buying_mode": "buy_it_now",
-        "condition": cfg.listing["condition"],
+        "condition": condition or cfg.listing["condition"],
         "listing_type_id": listing_type_id,
         "attributes": attributes,
         "sale_terms": sale_terms,
