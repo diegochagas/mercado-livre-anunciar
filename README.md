@@ -91,8 +91,8 @@ se a troca falhar por demora, rode `anunciar --auth` de novo e repita.
 
 Criada automaticamente na primeira execução com os padrões do Diego:
 
-- sempre **usado**, quantidade 1, **Premium**, **sem garantia**, disponibilidade
-  1 dia, criado **já ativo** (nunca pausado);
+- sempre **usado**, quantidade 1, **Premium**, **sem garantia**, **disponibilidade
+  imediata** (sem prazo de fabricação), criado **já ativo** (nunca pausado);
 - frete grátis somente se preço > R$ 200 (nunca Flex);
 - preço termina em ,90; item raro importado = preço exterior × 2,5–3.
 

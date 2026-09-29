@@ -17,7 +17,6 @@ DEFAULTS = {
         "listing_type": "premium",
         "available_quantity": 1,
         "warranty": "none",
-        "availability_days": 1,
     },
     "shipping": {
         "free_shipping_threshold": 200.00,
@@ -47,7 +46,6 @@ condition = "used"
 listing_type = "premium"
 available_quantity = 1
 warranty = "none"
-availability_days = 1
 
 [shipping]
 free_shipping_threshold = 200.00

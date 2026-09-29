@@ -257,9 +257,7 @@ def build_sale_terms(
     elif cfg.listing["warranty"] == "none":
         notes.append("Categoria não expõe WARRANTY_TYPE; garantia não enviada.")
 
-    days = int(cfg.listing["availability_days"])
-    if "MANUFACTURING_TIME" in available:
-        terms.append({"id": "MANUFACTURING_TIME", "value_name": f"{days} dias"})
+    # Disponibilidade imediata: MANUFACTURING_TIME nunca é enviado (regra fixa).
     return terms, notes
 
 

@@ -11,7 +11,6 @@ listing_type = "premium"        # "premium" é resolvido dinamicamente (hoje: go
                                 # também aceita um id literal, ex. "gold_special"
 available_quantity = 1
 warranty = "none"               # "none" = Sem garantia
-availability_days = 1           # prazo de disponibilidade/expedição (sale_term)
 
 [shipping]
 free_shipping_threshold = 200.00   # preço > limite → frete grátis (por conta do vendedor)
