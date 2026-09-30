@@ -49,6 +49,9 @@ _ATTR_SOURCES = {
     "MAGAZINE_NAME": "full_name",
 }
 
+_FORMAT_ATTR_IDS = {"FORMAT", "BOOK_FORMAT", "PUBLICATION_FORMAT"}
+_DEFAULT_FORMAT = "Físico"
+
 _NA_VALUE_NAMES = {"n/a", "não aplica", "nao aplica", "não se aplica", "nao se aplica"}
 
 
@@ -203,6 +206,15 @@ def build_attributes(
                 attrs.append({"id": attr_id, "value_id": value["id"]})
             else:
                 attrs.append({"id": attr_id, "value_name": condition_name.capitalize()})
+            continue
+
+        if attr_id in _FORMAT_ATTR_IDS or _norm(attr.get("name", "")) == "formato":
+            wanted = data.get("format_override") or _DEFAULT_FORMAT
+            value = _match_list_value(attr, wanted)
+            if value:
+                attrs.append({"id": attr_id, "value_id": value["id"]})
+            else:
+                attrs.append({"id": attr_id, "value_name": wanted})
             continue
 
         source = _ATTR_SOURCES.get(attr_id)

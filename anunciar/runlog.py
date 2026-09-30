@@ -29,6 +29,7 @@ TEMPLATE_IDENTIFICATION = {
     "event_edition_location_dates": None,
     "condition_notes": None,
     "condition_override": None,
+    "format_override": None,
     "is_imported_rare": False,
     "price_research": [],
     "suggested_price_brl": None,

@@ -53,6 +53,8 @@ regras:
   `condition_override: "new"` no JSON — sem isso o anúncio sai como usado
   mesmo com `condition_notes` dizendo o contrário, porque só o `override`
   muda o atributo `ITEM_CONDITION` enviado à API.
+- Formato (atributo "Formato" da categoria): sempre enviado como **Físico**.
+  Só use `format_override: "Digital"` no JSON se o Diego pedir.
 - Tipo de anúncio Premium, sem garantia, **disponibilidade imediata** (o CLI
   nunca envia `MANUFACTURING_TIME`, então o anúncio sai sem prazo de
   fabricação) — tudo resolvido pelo código, não precisa preencher no JSON.
