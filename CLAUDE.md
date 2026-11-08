@@ -66,3 +66,15 @@ Anúncio de **serviço** (restauração de fotos, aulas, manutenção…) usa o 
 classified`, não aceitam `condition` e não têm frete. O código está em
 `anunciar/servico.py` + `anunciar/servico_cli.py`, com testes em
 `tests/test_servico.py` (`scripts/check`).
+
+## Dimensões do pacote
+
+O ML recusa `POST /items` sem dimensões/peso da embalagem (HTTP 400
+`item.attribute.missing.seller.package.dimensions`). Preencha
+`identification.package` (`height_cm`, `width_cm`, `length_cm`, `weight_g`) no
+JSON antes do `--replay`; o CLI envia como `SELLER_PACKAGE_*`. Pesquise
+cada publicação (peso, páginas, formato) em guiadosquadrinhos.com e
+amazon.com.br (ficha "Peso do produto"), some peso e espessura dos volumes
+(+ ~100 g de embalagem) e use a maior altura/largura. Só se não achar, estime
+e diga ao Diego que foi estimativa. O guiadosquadrinhos.com bloqueia robôs
+(Cloudflare 403): não tente contornar, peça as medidas ao Diego ou estime.

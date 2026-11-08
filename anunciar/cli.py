@@ -25,6 +25,7 @@ from .validation import IdentificationError, validate_identification
 from .listing import (
     _category_root_name,
     build_attributes,
+    build_package_attributes,
     build_payload,
     build_sale_terms,
     build_shipping,
@@ -191,6 +192,9 @@ def _run(args, parser) -> int:
                 category_id, category_path = resolve_category(ml, data, cfg)
             listing_type_id, listing_type_name = resolve_listing_type(ml, cfg)
             attributes, attr_notes = build_attributes(ml, category_id, data, cfg)
+            pkg_attrs, pkg_notes = build_package_attributes(data.get("package"))
+            attributes += pkg_attrs
+            attr_notes += pkg_notes
             terms, term_notes = build_sale_terms(ml, category_id, cfg)
             sale_terms = terms
             warnings += attr_notes + term_notes

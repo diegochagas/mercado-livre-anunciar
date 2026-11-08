@@ -39,3 +39,15 @@ def test_format_defaults_to_fisico_and_can_be_overridden():
     assert {"id": "FORMAT", "value_id": "2"} in attrs
     attrs, _ = build_attributes(FakeMLFormat(), "MLB1", {"format_override": "Digital"}, cfg)
     assert {"id": "FORMAT", "value_id": "1"} in attrs
+
+
+def test_package_attributes_carry_units_and_flag_missing_values():
+    from anunciar.listing import build_package_attributes
+
+    full = {"height_cm": 5, "width_cm": 20, "length_cm": 28, "weight_g": 600}
+    attrs, notes = build_package_attributes(full)
+    assert {"id": "SELLER_PACKAGE_WEIGHT", "value_name": "600 g"} in attrs
+    assert {"id": "SELLER_PACKAGE_HEIGHT", "value_name": "5 cm"} in attrs
+    assert notes == []
+    attrs, notes = build_package_attributes({"height_cm": 5})
+    assert len(attrs) == 1 and "width_cm" in notes[0]
