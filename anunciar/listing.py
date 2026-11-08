@@ -253,6 +253,40 @@ def build_attributes(
     return attrs, notes
 
 
+# campo do "package" na identificação -> (atributo do ML, unidade)
+_PACKAGE_ATTRS = {
+    "height_cm": ("SELLER_PACKAGE_HEIGHT", "cm"),
+    "width_cm": ("SELLER_PACKAGE_WIDTH", "cm"),
+    "length_cm": ("SELLER_PACKAGE_LENGTH", "cm"),
+    "weight_g": ("SELLER_PACKAGE_WEIGHT", "g"),
+}
+
+
+def build_package_attributes(package: dict | None) -> tuple[list[dict], list[str]]:
+    """Atributos de dimensão/peso do pacote exigidos pelo POST /items (me2).
+
+    Exemplo: {"height_cm": 5, "width_cm": 20, "length_cm": 28, "weight_g": 600}
+    -> [{"id": "SELLER_PACKAGE_HEIGHT", "value_name": "5 cm"}, ...]
+    """
+    package = package or {}
+    attrs: list[dict] = []
+    missing: list[str] = []
+    for field, (attr_id, unit) in _PACKAGE_ATTRS.items():
+        value = package.get(field)
+        if value in (None, ""):
+            missing.append(field)
+            continue
+        attrs.append({"id": attr_id, "value_name": f"{value} {unit}"})
+    notes = []
+    if missing:
+        notes.append(
+            f"identification.package sem {', '.join(missing)}: o ML recusa o "
+            "anúncio sem dimensões e peso do pacote (HTTP 400 "
+            "item.attribute.missing.seller.package.dimensions)."
+        )
+    return attrs, notes
+
+
 def build_sale_terms(
     ml: MLClient, category_id: str, cfg: Config
 ) -> tuple[list[dict], list[str]]:

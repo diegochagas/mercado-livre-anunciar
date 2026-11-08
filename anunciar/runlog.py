@@ -21,6 +21,8 @@ TEMPLATE_IDENTIFICATION = {
     "isbn_ean": None,
     "pages": None,
     "dimensions": None,
+    # embalagem de envio (obrigatório no ML): cm e gramas
+    "package": {"height_cm": None, "width_cm": None, "length_cm": None, "weight_g": None},
     "language": None,
     "year": None,
     "country_of_origin": None,
