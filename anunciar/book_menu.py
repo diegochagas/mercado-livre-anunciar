@@ -71,8 +71,9 @@ class BookMenuClient:
         return response.json()
 
     def search(self, query: str, include_wishlist: bool = False) -> list[dict]:
-        """Itens que contêm o texto (título, série, editora, ISBN); por padrão só os que o Diego tem."""
-        params = {"search": query}
+        """Itens físicos com todas as palavras do texto (título, série, editora, ISBN); por padrão só os que o Diego tem."""
+        # Só itens físicos: e-books (digital) não se vendem no ML.
+        params = {"search": query, "digital": "false"}
         if not include_wishlist:
             params["ownership"] = "owned"
         return self._get("/api/v1/items", params)["items"]

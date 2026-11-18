@@ -55,7 +55,7 @@ def test_search_asks_for_owned_items_only_by_default():
     client, session = make_client({"/api/v1/items": (200, {"items": [BAKUMAN]})})
     assert client.search("bakuman 1") == [BAKUMAN]
     _url, params, timeout = session.calls[0]
-    assert params == {"search": "bakuman 1", "ownership": "owned"}
+    assert params == {"search": "bakuman 1", "digital": "false", "ownership": "owned"}
     assert timeout == book_menu.TIMEOUT_S
 
 
