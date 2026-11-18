@@ -67,6 +67,14 @@ classified`, não aceitam `condition` e não têm frete. O código está em
 `anunciar/servico.py` + `anunciar/servico_cli.py`, com testes em
 `tests/test_servico.py` (`scripts/check`).
 
+## Book Menu primeiro
+
+Para livros, HQs, mangás e revistas, `anunciar --book-menu-search` procura o item
+no Book Menu do Diego (`BOOK_MENU_URL` no `.env`, só leitura) e
+`anunciar <pasta> --book-menu-id <id>` gera o template já preenchido com o que o
+catálogo sabe (`anunciar/book_menu.py`; nada é inventado, o que ele não tem fica
+null). A web só completa o que faltar.
+
 ## Dimensões do pacote
 
 O ML recusa `POST /items` sem dimensões/peso da embalagem (HTTP 400

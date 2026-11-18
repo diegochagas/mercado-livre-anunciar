@@ -38,9 +38,11 @@ TEMPLATE_IDENTIFICATION = {
 }
 
 
-def save_template(folder: Path) -> Path:
+def save_template(folder: Path, prefill: dict | None = None, source: dict | None = None) -> Path:
     """Gera um JSON no formato de log (pronto para --replay) com a
-    identificação em branco, para preenchimento manual sem chamar a Anthropic."""
+    identificação em branco, para preenchimento manual sem chamar a Anthropic.
+    `prefill` (ex.: dados do Book Menu) preenche os campos que tiver; `source`
+    registra de onde vieram (id/URL do item)."""
     images = list_images(folder)
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -48,10 +50,22 @@ def save_template(folder: Path) -> Path:
     entry = {
         "folder": str(folder),
         "images": [str(p) for p in images],
-        "identification": TEMPLATE_IDENTIFICATION,
+        "identification": _merge_prefill(prefill or {}),
     }
+    if source:
+        entry["source"] = source
     path.write_text(json.dumps(entry, indent=2, ensure_ascii=False), encoding="utf-8")
     return path
+
+
+def _merge_prefill(prefill: dict) -> dict:
+    merged = json.loads(json.dumps(TEMPLATE_IDENTIFICATION))
+    for key, value in prefill.items():
+        if key == "package" and isinstance(value, dict):
+            merged["package"].update({k: v for k, v in value.items() if v is not None})
+        elif value is not None:
+            merged[key] = value
+    return merged
 
 
 def save_log(entry: dict) -> Path:

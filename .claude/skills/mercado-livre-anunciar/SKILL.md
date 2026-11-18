@@ -35,6 +35,35 @@ tarefa. Não existe `ANTHROPIC_API_KEY` a configurar para isso.
    item, ou se são vários itens formando um kit/lote). Use isso como ponto de
    partida da identificação, mas confirme/complete com pesquisa na web.
 
+## Passo 0 — procure primeiro no Book Menu (livros, HQs, mangás, revistas)
+
+O Diego cataloga a biblioteca no Book Menu (`BOOK_MENU_URL` no `.env`). Antes de
+pesquisar na web, olhe as fotos (título, número, editora, ISBN do código de barras)
+e procure o item lá:
+
+```bash
+./.venv/bin/anunciar --book-menu-search "bakuman 1"      # ou o ISBN, ou a editora
+```
+
+- **Achou** (uma linha `id  título  editora · ano · ISBN`): confira com as fotos que é a
+  mesma edição e gere o template já preenchido em vez do template em branco:
+
+  ```bash
+  ./.venv/bin/anunciar /caminho/das/fotos --book-menu-id bakuman-1
+  ```
+
+  Vêm do Book Menu: título, tipo, nome original, autores, editora, ISBN, páginas,
+  dimensões, idioma, ano, país, contexto (resumo) e a altura/largura da embalagem
+  (formato + 2 cm). Continue preenchendo à mão o que ele não sabe: `condition_notes`
+  (pelas fotos), `price_research` / `suggested_price_brl`, `package.length_cm` e
+  `package.weight_g` (o peso do item, se o Book Menu tiver, já vem em `weight_g`: some
+  ~100 g de embalagem), e ajuste o `title_ml` para busca no ML.
+- Item marcado `[de <nome>]` é de um amigo que o Diego está revendendo: anuncie
+  normalmente, mas diga isso no relatório.
+- **Não achou**, ou o Book Menu não respondeu: siga o fluxo abaixo (template em branco +
+  pesquisa na web) e, no relatório, sugira catalogar o item com a skill
+  `add-book-from-cover`.
+
 ## Fluxo principal
 
 ```bash

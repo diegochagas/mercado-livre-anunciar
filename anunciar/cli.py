@@ -7,6 +7,8 @@ pesquisando o preço — e não por uma chamada de API. Fluxo:
     anunciar /caminho/da/pasta          # gera um JSON modelo em branco
     # preencha 'identification' no JSON com os dados reais do produto
     anunciar --replay template.json     # precifica, resolve categoria e cria ativo
+    anunciar --book-menu-search "bakuman 1"          # procura o item no Book Menu
+    anunciar /pasta --book-menu-id bakuman-1         # template já preenchido pelo Book Menu
     anunciar --dry-run --replay ...     # mesma coisa, sem chamadas de escrita no ML
     anunciar --auth                     # fluxo OAuth único
     anunciar --activate MLB123456789    # ativa um anúncio que ficou pausado
@@ -38,6 +40,7 @@ from .listing import (
 from .ml_api import MLClient, MLError
 from .notify import notify_error, notify_success
 from .pricing import apply_rules
+from . import book_menu
 from .runlog import load_log, save_log, save_template
 from .tokens import AuthError, run_auth_flow
 
@@ -93,6 +96,12 @@ def main() -> int:
                         help="monta tudo sem chamadas de escrita no ML")
     parser.add_argument("--replay", metavar="LOGFILE",
                         help="publica a identificação preenchida em um template/log")
+    parser.add_argument("--book-menu-search", metavar="TEXTO",
+                        help="procura o item no Book Menu (BOOK_MENU_URL) antes de "
+                             "pesquisar na web; mostra id, título, editora, ano, ISBN")
+    parser.add_argument("--book-menu-id", metavar="ID",
+                        help="com a pasta de fotos: gera o template já preenchido com "
+                             "os dados desse item do Book Menu")
     parser.add_argument("--config", metavar="PATH",
                         help="config TOML alternativa (padrão ~/.config/anunciar/config.toml)")
     args = parser.parse_args()
@@ -113,10 +122,28 @@ def main() -> int:
             for cause in causes:
                 print(f"  - {cause}", file=sys.stderr)
         return 1
-    except (AuthError, IdentificationError) as exc:
+    except (AuthError, IdentificationError, book_menu.BookMenuError) as exc:
         notify_error(str(exc))
         print(f"\nERRO: {exc}", file=sys.stderr)
         return 1
+
+
+def _book_menu_search(query: str) -> int:
+    matches = book_menu.client_from_env().search(query)
+    for item in matches:
+        print(book_menu.describe_match(item))
+    if not matches:
+        print(f"Nada no Book Menu para {query!r}: siga com a pesquisa na web.")
+    return 0
+
+
+def _book_menu_prefill(item_id: str | None) -> tuple[dict | None, dict | None]:
+    if not item_id:
+        return None, None
+    client = book_menu.client_from_env()
+    item = client.get(item_id)
+    print(f"Template preenchido com o Book Menu: {item.get('title')} ({item_id}).")
+    return book_menu.identification_from_item(item), {"book_menu_id": item_id, "url": f"{client.base_url}/?item={item_id}"}
 
 
 def _run(args, parser) -> int:
@@ -133,8 +160,12 @@ def _run(args, parser) -> int:
         print(f"Link: {result.get('permalink', '-')}")
         return 0
 
+    if args.book_menu_search:
+        return _book_menu_search(args.book_menu_search)
+
     if args.folder and not args.replay:
-        template_path = save_template(Path(args.folder).expanduser())
+        prefill, source = _book_menu_prefill(args.book_menu_id)
+        template_path = save_template(Path(args.folder).expanduser(), prefill, source)
         print(f"Modelo salvo em {template_path}.")
         print("Preencha os campos de 'identification' com os dados reais do "
               "produto (identificação e pesquisa de preço feitas à mão) e "
